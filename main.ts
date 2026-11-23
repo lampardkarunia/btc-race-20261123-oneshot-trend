@@ -12,7 +12,7 @@
 // entries never get a washout to buy.
 //
 // So this bot takes exactly ONE trade per window and then stops:
-//   Entry: once EMA12 crosses above EMA48 with price above SMA120 (the
+//   Entry: once EMA12 crosses above EMA48 with price 10 bps above SMA120 (the
 //     trend has started, confirmed on the slow average), buy 85% of equity.
 //     No entries before bar 120 (averages need history) or after bar 1200.
 //   Exit: a trailing stop 200 bps under the best close since entry, a hard
@@ -47,6 +47,10 @@ const SLIP = 200; // max slippage bps
 const EMA_F = 12;
 const EMA_S = 48;
 const SMA_N = 120;
+const CONFIRM_BPS = 10; // entry needs price 10 bps above SMA120, not a hairline
+//   cross: in flat chop the averages sit on top of each other and a 0.01 bps
+//   cross would spend the bot's single bullet on noise. (Backtest: +0/+5/+10
+//   bps all grade +22.98 on the dev window; +10 is the round, central value.)
 const SIZE_BPS = 8500; // 85% of equity on the one entry
 const TRAIL_BPS = -200; // trailing stop below the best close since entry
 const SL_BPS = -200; // hard stop below the entry price
@@ -147,7 +151,7 @@ await runBars({
         if (s !== null) orders = [s];
       }
     } else if (!done && seq >= pauseUntil && seq >= MIN_BAR && seq < LATE_BAR) {
-      if (emaF > emaS && close > sma(SMA_N)) {
+      if (emaF > emaS && close > sma(SMA_N) * (1 + CONFIRM_BPS / 10000)) {
         const b = buy(state, SIZE_BPS);
         if (b !== null) orders = [b];
       }
